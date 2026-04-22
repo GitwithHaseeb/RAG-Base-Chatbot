@@ -1,0 +1,205 @@
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>GH Buddy Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 980px; margin: 32px auto; line-height: 1.5; color: #0f172a; }
+    h1,h2,h3 { color: #1e3a8a; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+    th { background: #eff6ff; }
+    code { background: #f1f5f9; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <img src='../logo/gh_logo.png' alt='GH Buddy Logo' style='max-width:260px; margin-bottom:16px;'/>
+  <h1>GH Buddy Chatbot</h1>
+<p><strong>University Project Report</strong><br />
+<strong>Authors:</strong> GH Team (friends' initials G and H)<br />
+<strong>Project:</strong> Retrieval-Augmented Generation Assistant for Students</p>
+<h2>Abstract</h2>
+<p>GH Buddy is a student-focused RAG chatbot that retrieves information from uploaded study material and answers questions using context-grounded generation. The system supports dual model routing (Google Gemini and Hugging Face), local vector retrieval with ChromaDB, and an interactive Streamlit interface. The design objective is reliable and friendly support for common academic queries while maintaining transparent source referencing.</p>
+<h2>Introduction</h2>
+<p>Students usually keep course information in different formats: PDF syllabi, DOCX notes, text summaries, and external web links. This fragmentation makes quick revision difficult, especially before exams or assignments. GH Buddy solves this by building a searchable personal knowledge base and combining retrieval with AI generation.</p>
+<h3>Problem Statement</h3>
+<ul>
+<li>Educational content is scattered across heterogeneous file types.</li>
+<li>Keyword search often misses semantically relevant answers.</li>
+<li>Generic chatbots may hallucinate when not grounded in trusted context.</li>
+</ul>
+<h3>Motivation</h3>
+<ul>
+<li>Improve student response time for routine study questions.</li>
+<li>Demonstrate practical end-to-end RAG engineering in a portfolio project.</li>
+<li>Represent collaboration identity: <strong>G</strong> and <strong>H</strong> are the friends' initials in the project name.</li>
+</ul>
+<h2>System Architecture</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[User Uploads Files/URLs] --&gt; B[Document Loader]
+    B --&gt; C[Text Chunking]
+    C --&gt; D[Embedding Model all-MiniLM-L6-v2]
+    D --&gt; E[ChromaDB Vector Store]
+    F[User Query] --&gt; G[Retriever Top-k]
+    G --&gt; E
+    G --&gt; H[Prompt Builder]
+    H --&gt; I{Model Toggle}
+    I --&gt;|Gemini| J[Google Gemini API]
+    I --&gt;|Hugging Face| K[HF Inference API]
+    J --&gt; L[Answer + Sources]
+    K --&gt; L
+</code></pre>
+<p>The system follows a modular architecture where each layer (ingestion, embedding, retrieval, generation, and UI) can be upgraded independently.</p>
+<h2>Technology Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Tool</th>
+<th>Purpose</th>
+<th>Why Selected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>Streamlit</td>
+<td>Chat UI and ingestion controls</td>
+<td>Fast prototyping and deployment</td>
+</tr>
+<tr>
+<td>Document Parsing</td>
+<td>PyPDF2, python-docx, BeautifulSoup</td>
+<td>Extract text from files/URLs</td>
+<td>Simple, reliable, open source</td>
+</tr>
+<tr>
+<td>Chunking</td>
+<td>LangChain RecursiveCharacterTextSplitter</td>
+<td>Split long text into overlapping chunks</td>
+<td>Preserves context continuity</td>
+</tr>
+<tr>
+<td>Embeddings</td>
+<td>sentence-transformers/all-MiniLM-L6-v2</td>
+<td>Semantic vector representation</td>
+<td>Strong quality-to-speed tradeoff</td>
+</tr>
+<tr>
+<td>Vector Store</td>
+<td>ChromaDB</td>
+<td>Persistent similarity search</td>
+<td>Easy local setup and metadata support</td>
+</tr>
+<tr>
+<td>LLM Backend</td>
+<td>Gemini + Hugging Face</td>
+<td>Answer generation</td>
+<td>Flexible model routing/fallback</td>
+</tr>
+<tr>
+<td>Ops</td>
+<td>Docker + GitHub Actions</td>
+<td>Reproducibility and CI</td>
+<td>Portfolio-ready workflow</td>
+</tr>
+</tbody>
+</table>
+<h2>Technology Choices and Justification</h2>
+<ul>
+<li><strong>Python</strong>: Fast development and strong AI ecosystem.</li>
+<li><strong>Streamlit</strong>: Rapid, interactive frontend for demos and student tools.</li>
+<li><strong>ChromaDB</strong>: Easy local vector database with persistence.</li>
+<li><strong>sentence-transformers</strong>: Efficient, high-quality semantic embeddings.</li>
+<li><strong>LangChain splitter</strong>: Reliable recursive text chunking.</li>
+<li><strong>Gemini + Hugging Face</strong>: Dual backend flexibility and fallback options.</li>
+</ul>
+<h2>Detailed RAG Pipeline</h2>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant U as Student
+    participant S as Streamlit UI
+    participant V as ChromaDB
+    participant M as Model API
+    U-&gt;&gt;S: Ask question
+    S-&gt;&gt;V: Retrieve top-k chunks
+    V--&gt;&gt;S: Relevant contexts + sources
+    S-&gt;&gt;M: Prompt with grounded context
+    M--&gt;&gt;S: Generated answer
+    S--&gt;&gt;U: Answer + source citations
+</code></pre>
+<ol>
+<li><strong>Ingestion</strong>: Load PDF (PyPDF2), DOCX (python-docx), TXT, and URL content (requests + BeautifulSoup).</li>
+<li><strong>Chunking</strong>: Split content into overlapping chunks (<code>500</code> size, <code>50</code> overlap).</li>
+<li><strong>Embedding</strong>: Generate vectors using <code>all-MiniLM-L6-v2</code>.</li>
+<li><strong>Storage</strong>: Persist embeddings and metadata in <code>./chroma_db</code>.</li>
+<li><strong>Retrieval</strong>: Embed query and fetch top-k relevant chunks.</li>
+<li><strong>Prompting</strong>: Build grounded prompt with context and student question.</li>
+<li><strong>Generation</strong>: Route prompt to selected model (Gemini or Hugging Face).</li>
+<li><strong>Response Rendering</strong>: Show concise answer and cited sources in UI.</li>
+</ol>
+<h2>Setup and Usage Guide</h2>
+<ol>
+<li>Install dependencies from <code>requirements.txt</code>.</li>
+<li>Configure <code>.env</code> API keys.</li>
+<li>Run:</li>
+<li><code>python generate_sample_data.py</code></li>
+<li><code>python generate_logo.py</code></li>
+<li><code>python generate_report.py</code></li>
+<li>Launch app:</li>
+<li><code>streamlit run src/app.py</code></li>
+</ol>
+<h2>Sample Interactions</h2>
+<ul>
+<li><strong>Screenshot Placeholder 1:</strong> Main chat window with model toggle and source citations (<code>docs/screenshots/chat_placeholder.png</code>).</li>
+<li><strong>Screenshot Placeholder 2:</strong> Sidebar upload flow with document processing status (<code>docs/screenshots/sidebar_placeholder.png</code>).</li>
+</ul>
+<h2>Evaluation</h2>
+<h3>Sample Query 1</h3>
+<ul>
+<li><strong>Question</strong>: "What is covered in week 2 of the syllabus?"</li>
+<li><strong>Expected Context</strong>: <code>data/syllabus.pdf</code></li>
+<li><strong>Expected Answer</strong>: "Week 2 covers conditionals and loops."</li>
+</ul>
+<h3>Sample Query 2</h3>
+<ul>
+<li><strong>Question</strong>: "What data structure maps keys to values?"</li>
+<li><strong>Expected Context</strong>: <code>data/python_notes.docx</code></li>
+<li><strong>Expected Answer</strong>: "Dictionaries are used for key-value mappings."</li>
+</ul>
+<h3>Sample Query 3 (Out of Context)</h3>
+<ul>
+<li><strong>Question</strong>: "What is the capital of Japan?"</li>
+<li><strong>Expected Answer Rule</strong>: "I don't know, but I can ask your teacher for you."</li>
+</ul>
+<h3>Evaluation Metrics (Project-Level)</h3>
+<ul>
+<li><strong>Grounded Accuracy (manual checks):</strong> High on in-document factual questions.</li>
+<li><strong>Average Response Time:</strong> ~1-3s retrieval + model latency (depends on API and network).</li>
+<li><strong>Robustness:</strong> Graceful fallback on missing keys, rate limits, and empty retrieval.</li>
+</ul>
+<h2>Error Handling and Reliability</h2>
+<ul>
+<li>Missing API keys produce safe fallback response: "Please set your API keys."</li>
+<li>External API failures return graceful retry messages.</li>
+<li>Empty files and failed URL fetches are handled without crashing.</li>
+</ul>
+<h2>Future Improvements</h2>
+<ul>
+<li>Add hybrid retrieval (BM25 + vector search).</li>
+<li>Add reranking for better answer precision.</li>
+<li>Support OCR for scanned PDFs.</li>
+<li>Add user authentication and per-user knowledge spaces.</li>
+<li>Add automated evaluation suite with benchmark Q/A sets.</li>
+</ul>
+<h2>References</h2>
+<ul>
+<li>Lewis et al., "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks."</li>
+<li><a href="https://docs.trychroma.com/">ChromaDB Documentation</a></li>
+<li><a href="https://www.sbert.net/">Sentence Transformers Documentation</a></li>
+<li><a href="https://docs.streamlit.io/">Streamlit Documentation</a></li>
+<li><a href="https://ai.google.dev/">Google Gemini API Documentation</a></li>
+<li><a href="https://huggingface.co/docs/api-inference/index">Hugging Face Inference API Documentation</a></li>
+</ul>
+  <hr/>
+  <p><strong>Print to PDF:</strong> Open this HTML in a browser and press Ctrl+P, then Save as PDF.</p>
+</body>
+</html>
